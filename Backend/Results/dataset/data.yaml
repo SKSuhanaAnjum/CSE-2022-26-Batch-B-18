@@ -1,0 +1,13 @@
+train: ../train/images
+val: ../valid/images
+test: ../test/images
+
+nc: 20
+names: ['---', 'Acid Pollution', 'Dead Animals Pollution', 'Eutrophication Pollution', 'Fish', 'Oil Pollution', 'Plastic Pollution', 'bottle', 'cardboard', 'glass', 'leaf', 'metal', 'paper', 'plastic', 'pmb', 'sld', 'slh', 'trash_plastic', 'water', 'waterbottle']
+
+roboflow:
+  workspace: asad-2t9iu
+  project: water_pollution-ggvhq
+  version: 1
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/asad-2t9iu/water_pollution-ggvhq/dataset/1
