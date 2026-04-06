@@ -15,24 +15,30 @@ UPLOAD_FOLDER = os.path.join('static', 'uploads')
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
+# ───── Helper: Safe render (prevents crash if HTML missing) ─────
+def safe_render(template, **kwargs):
+    try:
+        return render_template(template, **kwargs)
+    except Exception as e:
+        return f"{template} not found or error: {e}"
+
 # ───── Routes ─────
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return safe_render('index.html')
 
-# ✅ FIXED: Add missing routes
 @app.route('/register')
 def register():
-    return render_template('register.html')  # or simple text if file not present
+    return safe_render('register.html')
 
 @app.route('/login')
 def login():
-    return render_template('login.html')
+    return safe_render('login.html')
 
 @app.route('/about')
 def about():
-    return render_template('about.html')
+    return safe_render('about.html')
 
 # ───── Main Home Route ─────
 @app.route('/home', methods=['GET', 'POST'])
@@ -54,24 +60,24 @@ def home():
                 upload_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
                 img.save(upload_path)
             except Exception as e:
-                print("Error:", e)
+                print("Error (webcam):", e)
 
         # File upload
         elif 'image' in request.files:
             file = request.files['image']
-            if file.filename:
+            if file and file.filename:
                 filename = secure_filename(file.filename)
                 upload_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
                 file.save(upload_path)
 
         # Dummy prediction
-        if upload_path:
+        if upload_path and filename:
             prediction = "Pollution detected (Demo Mode)"
             image_url = url_for('static', filename=f'uploads/{filename}')
 
-    return render_template('home.html',
-                           uploaded_image_url=image_url,
-                           prediction=prediction)
+    return safe_render('home.html',
+                       uploaded_image_url=image_url,
+                       prediction=prediction)
 
 # ───── Run Flask ─────
 if __name__ == "__main__":
