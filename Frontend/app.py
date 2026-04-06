@@ -1,32 +1,83 @@
-import streamlit as st
-from ultralytics import YOLO
-import numpy as np
+from flask import Flask, render_template, request, redirect, url_for, session
+import os
+import base64
+import io
 from PIL import Image
+from werkzeug.utils import secure_filename
+import time
 
-# Load model
-model = YOLO("best.pt")
+# ───── Flask Setup ─────
+app = Flask(__name__)
+app.secret_key = "super-secret-key-123"
 
-st.title("Water Quality Detection System 💧")
-st.write("Upload an image to detect pollution")
+# ───── Upload Folder ─────
+UPLOAD_FOLDER = os.path.join('static', 'uploads')
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-uploaded_file = st.file_uploader("Choose an image", type=["jpg", "png", "jpeg"])
+# ───── Routes ─────
 
-if uploaded_file:
-    image = Image.open(uploaded_file)
-    st.image(image, caption="Uploaded Image", use_column_width=True)
+@app.route('/')
+def index():
+    return render_template('index.html')
 
-    img = np.array(image)
-    results = model.predict(source=img, conf=0.3, verbose=False)
-    result = results[0]
+@app.route('/register', methods=["GET", "POST"])
+def register():
+    if request.method == "POST":
+        return render_template('login.html', message="Demo Mode: Registration successful")
+    return render_template('register.html')
 
-    if result.boxes is not None and len(result.boxes) > 0:
-        top_box = max(result.boxes, key=lambda b: float(b.conf))
-        cls_id = int(top_box.cls)
-        conf = float(top_box.conf)
+@app.route('/login', methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        session['user_email'] = request.form.get('email')
+        return redirect("/home")
+    return render_template('login.html')
 
-        st.success(f"Detected Class: {cls_id} (Confidence: {conf:.2f})")
+@app.route('/about')
+def about():
+    return render_template('about.html')
 
-        annotated = result.plot()
-        st.image(annotated, caption="Detection Result")
-    else:
-        st.warning("No pollutant detected")
+# ───── Main Home Route ─────
+@app.route('/home', methods=['GET', 'POST'])
+def home():
+    prediction = None
+    image_url = None
+
+    if request.method == 'POST':
+        upload_path = None
+        filename = None
+
+        # Webcam capture
+        if 'image' in request.form and request.form['image'].startswith('data:image'):
+            try:
+                image_data = request.form['image'].split(',')[1]
+                image_bytes = base64.b64decode(image_data)
+                img = Image.open(io.BytesIO(image_bytes)).convert('RGB')
+                filename = f"webcam_{int(time.time())}.jpg"
+                upload_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                img.save(upload_path)
+            except Exception as e:
+                print("Error:", e)
+
+        # File upload
+        elif 'image' in request.files:
+            file = request.files['image']
+            if file and file.filename:
+                filename = secure_filename(file.filename)
+                upload_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                file.save(upload_path)
+
+        # Dummy prediction
+        if upload_path and filename:
+            prediction = "Pollution detected (Demo Mode)"
+            image_url = url_for('static', filename=f'uploads/{filename}')
+
+    return render_template('home.html',
+                           uploaded_image_url=image_url,
+                           prediction=prediction)
+
+# ───── Run Flask ─────
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
