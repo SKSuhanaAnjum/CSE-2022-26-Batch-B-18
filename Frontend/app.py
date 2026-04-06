@@ -16,10 +16,25 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # ───── Routes ─────
+
 @app.route('/')
 def index():
     return render_template('index.html')
 
+# ✅ FIXED: Add missing routes
+@app.route('/register')
+def register():
+    return render_template('register.html')  # or simple text if file not present
+
+@app.route('/login')
+def login():
+    return render_template('login.html')
+
+@app.route('/about')
+def about():
+    return render_template('about.html')
+
+# ───── Main Home Route ─────
 @app.route('/home', methods=['GET', 'POST'])
 def home():
     prediction = None
@@ -49,7 +64,7 @@ def home():
                 upload_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
                 file.save(upload_path)
 
-        # Dummy prediction (since YOLO removed)
+        # Dummy prediction
         if upload_path:
             prediction = "Pollution detected (Demo Mode)"
             image_url = url_for('static', filename=f'uploads/{filename}')
