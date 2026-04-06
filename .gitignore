@@ -1,0 +1,6 @@
+Backend/*.zip
+*.zip
+Backend/Results/
+Backend/dataset/
+*.pt
+*.h5
